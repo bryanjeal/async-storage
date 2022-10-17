@@ -688,7 +688,7 @@ std::optional<std::vector<std::string>> DBStorage::DBTask::GetAllKeys(sqlite3 *d
 }
 
 std::optional<std::vector<std::string>>
-DBStorage::DBTask::GetKeysThatStartWithPrefix(sqlite3 *db, const std::string &prefix) noexcept
+DBStorage::DBTask::GetKeysByPrefix(sqlite3 *db, const std::string &prefix) noexcept
 {
     CHECK(!m_errorManager.HasErrors());
     if (prefix.empty()) {

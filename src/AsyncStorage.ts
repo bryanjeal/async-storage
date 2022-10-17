@@ -124,7 +124,7 @@ const AsyncStorage: AsyncStorageStatic = {
    * This will include any keys known to your app; for all callers, libraries, etc.
    *
    */
-  getKeysThatStartWithPrefix: (prefix: string, callback) => {
+  getKeysByPrefix: (prefix: string, callback) => {
     return createPromise(() => {
       if (!prefix) {
         return [] as string[];
@@ -156,7 +156,7 @@ const AsyncStorage: AsyncStorageStatic = {
   multiGetByKeyPrefix: (prefix, callback) => {
     return new Promise((resolve, reject) => {
       try {
-        AsyncStorage.getKeysThatStartWithPrefix(prefix).then((keys) => {
+        AsyncStorage.getKeysByPrefix(prefix).then((keys) => {
           AsyncStorage.multiGet(keys).then((keyValuePairs) => {
             callback?.(null, keyValuePairs);
             resolve(keyValuePairs);

@@ -97,7 +97,7 @@ export type AsyncStorageStatic = {
    * This will include any keys known to your app; for all callers, libraries, etc.
    *
    */
-  getKeysThatStartWithPrefix: (
+  getKeysByPrefix: (
     prefix: string,
     callback?: CallbackWithResult<readonly string[]>
   ) => Promise<readonly string[]>;

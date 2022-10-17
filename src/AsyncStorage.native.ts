@@ -180,9 +180,9 @@ const AsyncStorage = ((): AsyncStorageStatic => {
      * This will include any keys known to your app; for all callers, libraries, etc.
      *
      */
-    getKeysThatStartWithPrefix: (prefix: string, callback) => {
+    getKeysByPrefix: (prefix: string, callback) => {
       return new Promise((resolve, reject) => {
-        RCTAsyncStorage.getKeysThatStartWithPrefix(
+        RCTAsyncStorage.getKeysByPrefix(
           prefix,
           (error?: ErrorLike, keys?: string[]) => {
             const err = convertError(error);
