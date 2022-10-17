@@ -15,6 +15,102 @@ namespace winrt
     using namespace Windows::Storage;
 }  // namespace winrt
 
+// ----------------------------------------------------------------
+// Utilities
+// ----------------------------------------------------------------
+std::string
+replace(const std::string &s, const std::string &from, const std::string &to, int n = -1)
+{
+    // if the number of occurrences to replace is 0 then avoid further work and the 'ns' allocation
+    if (n == 0) {
+        return s;
+    }
+
+    // if 's' is empty then avoid further work and the 'ns' allocation
+    if (s.empty()) {
+        return s;
+    }
+
+    // if the search string ('from') is empty then avoid further work and the 'ns' allocation
+    if (from.empty()) {
+        return s;
+    }
+
+    // if 'from' and 'to' are the same then avoid further work and the 'ns' allocation
+    if (from == to) {
+        return s;
+    }
+
+    // make sure we have something to replace in the string
+    const auto fromLen = from.length();
+    std::string::size_type pos = 0;
+    std::vector<std::string::size_type> fromCounter;
+    while ((pos = s.find(from, pos)) != std::string::npos) {
+        fromCounter.push_back(pos);
+        pos += fromLen;
+    }
+
+    // if 'from' isn't in 's' then avoid further work and the 'ns' allocation
+    if (fromCounter.size() == 0) {
+        return s;
+    } else if (n < 0 || fromCounter.size() < static_cast<size_t>(n)) {
+        n = fromCounter.size();
+    }
+
+    // "replace" by building a new string
+    // this is MUCH faster than replacing in place.
+    //
+    // Benchmark is replace all instances of "back" with "foobar" in
+    // The Project Gutenberg EBook of The Adventures of Sherlock Holmes
+    // by Sir Arthur Conan Doyle
+    //
+    // Benchmark                     Time           CPU          Iterations
+    // BM_ReplaceInPlace      90694709 ns   90337000 ns          6
+    // BM_ReplaceByBuilding    3697276 ns    3676935 ns        186
+    //
+    // We are basically trading increased memory usage for speed.
+    //
+    // create the output string 'ns'. Reserve the amount of space we need.
+    std::string ns;
+    ns.reserve(s.length() + n * (to.length() - fromLen));
+
+    // reset pos and create a counter to make sure we only replace 'n'
+    pos = 0;
+    size_t counter = 0;
+    for (auto const &p : fromCounter) {
+        // if we hit the "n" count then stop
+        if (counter == n) {
+            break;
+        }
+
+        // append from last position to where the position of 'from' is
+        ns.append(s, pos, p - pos);
+
+        // append the replacement ('to')
+        ns.append(to);
+
+        // update position
+        pos = p + fromLen;
+
+        // update counter
+        ++counter;
+    }
+
+    // append remaining 's'
+    ns.append(s, pos);
+
+    return ns;
+}
+
+std::string EscapeSqlWildcards(const std::string &search)
+{
+    // we want to escape any wildcard characters used in the prefix
+    auto escaped = replace(search, "_", "\\_");
+    escaped = replace(escaped, "%", "\\%");
+
+    return escaped;
+}
+
 // All functions below return std::nullopt on error.
 #define CHECK(expr)                                                                                \
     if (!(expr)) {                                                                                 \
@@ -226,6 +322,11 @@ namespace
         }
     }
 }  // namespace
+
+
+// ----------------------------------------------------------------
+// DBStorage
+// ----------------------------------------------------------------
 
 // Initialize storage. On error, report it to the errorManager and return std::nullopt.
 std::optional<sqlite3 *>
@@ -666,97 +767,3 @@ void WriteValue(const winrt::IJSValueWriter &writer, const DBStorage::Error &val
     writer.WriteObjectEnd();
 }
 
-
-// ----------------------------------------------------------------
-// Utilities
-// ----------------------------------------------------------------
-std::string replace(const std::string &s, const std::string &from, const std::string &to, int n = -1)
-{
-    // if the number of occurrences to replace is 0 then avoid further work and the 'ns' allocation
-    if (n == 0) {
-        return s;
-    }
-
-    // if 's' is empty then avoid further work and the 'ns' allocation
-    if (s.empty()) {
-        return s;
-    }
-
-    // if the search string ('from') is empty then avoid further work and the 'ns' allocation
-    if (from.empty()) {
-        return s;
-    }
-
-    // if 'from' and 'to' are the same then avoid further work and the 'ns' allocation
-    if (from == to) {
-        return s;
-    }
-
-    // make sure we have something to replace in the string
-    const auto fromLen = from.length();
-    std::string::size_type pos = 0;
-    std::vector<std::string::size_type> fromCounter;
-    while ((pos = s.find(from, pos)) != std::string::npos) {
-        fromCounter.push_back(pos);
-        pos += fromLen;
-    }
-
-    // if 'from' isn't in 's' then avoid further work and the 'ns' allocation
-    if (fromCounter.size() == 0) {
-        return s;
-    } else if (n < 0 || fromCounter.size() < static_cast<size_t>(n)) {
-        n = fromCounter.size();
-    }
-
-    // "replace" by building a new string
-    // this is MUCH faster than replacing in place.
-    //
-    // Benchmark is replace all instances of "back" with "foobar" in
-    // The Project Gutenberg EBook of The Adventures of Sherlock Holmes
-    // by Sir Arthur Conan Doyle
-    //
-    // Benchmark                     Time           CPU          Iterations
-    // BM_ReplaceInPlace      90694709 ns   90337000 ns          6
-    // BM_ReplaceByBuilding    3697276 ns    3676935 ns        186
-    //
-    // We are basically trading increased memory usage for speed.
-    //
-    // create the output string 'ns'. Reserve the amount of space we need.
-    std::string ns;
-    ns.reserve(s.length() + n * (to.length() - fromLen));
-
-    // reset pos and create a counter to make sure we only replace 'n'
-    pos = 0;
-    size_t counter = 0;
-    for (auto const &p : fromCounter) {
-        // if we hit the "n" count then stop
-        if (counter == n) {
-            break;
-        }
-
-        // append from last position to where the position of 'from' is
-        ns.append(s, pos, p - pos);
-
-        // append the replacement ('to')
-        ns.append(to);
-
-        // update position
-        pos = p + fromLen;
-
-        // update counter
-        ++counter;
-    }
-
-    // append remaining 's'
-    ns.append(s, pos);
-
-    return ns;
-}
-
-std::string EscapeSqlWildcards(const std::string &search) {
-    // we want to escape any wildcard characters used in the prefix
-    auto escaped = replace(search, "_", "\\_");
-    escaped = replace(escaped, "%", "\\%");
-
-    return escaped;
-}
