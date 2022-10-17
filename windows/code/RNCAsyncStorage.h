@@ -116,8 +116,8 @@ namespace winrt::ReactNativeAsyncStorage::implementation
                                 });
         }
 
-        REACT_METHOD(getKeysThatStartWithPrefix)
-        void getKeysThatStartWithPrefix(
+        REACT_METHOD(getKeysByPrefix)
+        void getKeysByPrefix(
             std::string &&prefix,
             std::function<void(const std::vector<DBStorage::Error>& errors,
                 const std::vector<std::string> &result)> &&callback) noexcept
@@ -130,7 +130,7 @@ namespace winrt::ReactNativeAsyncStorage::implementation
             m_dbStorage.AddTask(
                 promise->GetErrorManager(),
                 [promise, prefix = std::move(prefix)](DBStorage::DBTask& task, sqlite3* db) noexcept {
-                promise->ResolveOrReject(task.GetKeysThatStartWithPrefix(db, prefix));
+                promise->ResolveOrReject(task.GetKeysByPrefix(db, prefix));
             });
         }
 
